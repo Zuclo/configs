@@ -1,0 +1,174 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: -35.677710
+  longitude: 174.297509
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: 0
+  # metric for Metric, imperial for Imperial
+  unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: NZ
+  # Customization file
+  customize: !include customize.yaml
+
+# Show links to resources in log and frontend
+# introduction:
+
+# Enables the frontend
+frontend:
+
+# Enables configuration UI
+config:
+
+http:
+  # Secrets are defined in the file secrets.yaml
+  # api_password: !secret http_password
+  # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+  # base_url: example.duckdns.org:8123
+
+# Checks for available updates
+# Note: This component will send some information about your system to
+# the developers to assist with development of Home Assistant.
+# For more information, please see:
+# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
+updater:
+  # Optional, allows Home Assistant developers to focus on popular components.
+  # include_used_components: true
+
+# Discover some devices automatically
+discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+
+# Enables support for tracking state changes over time
+history:
+
+# View all events in a logbook
+logbook:
+
+# Enables a map showing the location of tracked devices
+map:
+
+# Track the sun
+sun:
+
+# Weather prediction
+#sensor:
+#  - platform: yr
+
+# Text to speech
+tts:
+  - platform: google
+
+#automation: !include automations.yaml
+script: !include scripts.yaml
+
+mqtt:  
+  broker: m14.cloudmqtt.com  
+  port: 16938
+  client_id: home-assistant-1  
+  username: ihbnkivo  
+  password: h_4Fo6DySdHk
+  
+light:  
+  - platform: mqtt_json  
+    name: "SN1 LED"  
+    state_topic: "bruh/sensornode1"  
+    command_topic: "bruh/sensornode1/set"  
+    brightness: true  
+    flash: true  
+    rgb: true  
+    optimistic: false  
+    qos: 0
+
+sensor:
+
+  - platform: random
+
+  - platform: mqtt  
+    state_topic: "bruh/sensornode1"  
+    name: "SN1 Humidity"  
+    unit_of_measurement: "%"  
+    value_template: '{{ value_json.humidity | round(1) }}'
+
+  - platform: mqtt  
+    state_topic: "bruh/sensornode1"  
+    name: "SN1 LDR"
+    ##This sensor is not calibrated to actual LUX. Rather, this a map of the input voltage ranging from 0 - 1023.
+    unit_of_measurement: "LUX"  
+    value_template: '{{ value_json.ldr }}'  
+
+  - platform: mqtt  
+    state_topic: "bruh/sensornode1"  
+    name: "SN1 PIR"  
+    value_template: '{{ value_json.motion }}'  
+
+  - platform: mqtt  
+    state_topic: "bruh/sensornode1"  
+    name: "SN1 Temperature"  
+    unit_of_measurement: "°C"  
+    value_template: '{{ value_json.temperature | round(1) }}'  
+
+  - platform: mqtt
+    state_topic: "bruh/sensornode1"
+    name: "SN1 Real Feel"
+    unit_of_measurement: "°C"
+    value_template: '{{ value_json.heatIndex | round(1) }}'
+
+group:  
+  sensor_node_1_card:  
+    name: Sensor Node 1  
+    entities:  
+      - sensor.sn1_temperature  
+      - sensor.sn1_humidity  
+      - sensor.sn1_ldr  
+      - sensor.sn1_pir  
+      - light.sn1_led
+
+device_tracker:
+  - platform: owntracks
+    max_gps_accuracy: 200
+    waypoints: True
+    waypoint_whitelist:
+      - haldor
+
+#media_player:
+#  - platform: cast
+
+notify:
+  - name: notify
+    platform: pushbullet
+    api_key: o.bEHuGz5eeoaE0WnZOY8xevZgXluOKHVR
+
+automation:
+
+  - alias: 'Trigger motion alarm'
+    trigger:
+      platform: state
+      entity_id: sensor.sn1_pir
+      to: "motion detected"
+
+    condition:
+      condition: state
+      entity_id: alarm_control_panel.ha_alarm
+      state: armed_away
+    action:
+      service: notify.notify
+      data:
+        title: "Alarm"
+        message: "ALARM! The alarm has been triggered"
+
+alarm_control_panel:
+  - platform: manual
+    name: Home Alarm
+    code: 1234
+    pending_time: 30
+    armed_home:
+      pending_time: 0
+    triggered:
+      pending_time: 20
+    trigger_time: 4
+
